@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  database:
+    image: mysql:8.0
+    container_name: my_database
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=localhost", "--user=myuser", "--password=mypassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  back-end:
+    build: ./back-end
+    container_name: my_backend
+    environment:
+      DATABASE_HOST: database
+      DATABASE_USER: myuser
+      DATABASE_PASSWORD: mypassword
+      DATABASE_DB: mydb
+    depends_on:
+      - database
+    ports:
+      - "3000:3000"
+
+  front-end:
+    build: ./front-end
+    container_name: my_frontend
+    depends_on:
+      - back-end
+    ports:
+      - "8080:80"
+
+volumes:
+  db_data:
