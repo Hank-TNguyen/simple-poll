@@ -1,0 +1,22 @@
+/* A simple CSS reset */
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+  
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+  }
+  
+  /* Simple container style */
+  .container {
+    margin: 2rem auto;
+    max-width: 800px;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
