@@ -28,7 +28,8 @@ services:
       DATABASE_PASSWORD: mypassword
       DATABASE_DB: mydb
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     ports:
       - "3000:3000"
 
