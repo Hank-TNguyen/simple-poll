@@ -1,5 +1,5 @@
 // go.mod example
-module backend
+module simple-poll
 
 go 1.21
 

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	poll "simple-poll/poll"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -17,7 +19,7 @@ func main() {
 	dbHost := os.Getenv("DATABASE_HOST")
 	dbName := os.Getenv("DATABASE_DB")
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", dbUser, dbPassword, dbHost, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbName)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -30,9 +32,13 @@ func main() {
 		log.Fatalf("Could not ping DB: %v", err)
 	}
 
+	// ROUTES
 	http.HandleFunc("/api/hello", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{"message": "Hello from Go backend!"}`)
 	})
+
+	// Attach poll routes at /api/polls
+	http.Handle("/api/polls/", http.StripPrefix("/api/polls", poll.PollRouter(db)))
 
 	log.Println("Backend running on port 3000")
 	log.Fatal(http.ListenAndServe(":3000", nil))
