@@ -39,6 +39,8 @@ func main() {
 
 	// Attach poll routes at /api/polls
 	http.Handle("/api/polls/", http.StripPrefix("/api/polls", poll.PollRouter(db)))
+	http.Handle("/api/questions/", http.StripPrefix("/api/questions", poll.QuestionRouter(db)))
+	http.Handle("/api/choices/", http.StripPrefix("/api/choices", poll.ChoiceRouter(db)))
 
 	log.Println("Backend running on port 3000")
 	log.Fatal(http.ListenAndServe(":3000", nil))

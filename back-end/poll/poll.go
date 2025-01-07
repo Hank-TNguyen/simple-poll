@@ -6,15 +6,86 @@ import (
 	"time"
 )
 
-// Poll struct matches your 'polls' table columns
 type Poll struct {
 	ID          int64      `json:"id"`
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	CreatedBy   int64      `json:"created_by"`
-	StartDate   *time.Time `json:"start_date"` // optional pointer
+	StartDate   *time.Time `json:"start_date"`
 	EndDate     *time.Time `json:"end_date"`
 	CreatedAt   time.Time  `json:"created_at"`
+	Questions   []Question `json:"questions"`
+}
+
+func GetPoll(db *sql.DB, pollID int64) (*Poll, error) {
+	pollQuery := `
+		SELECT id, title, description, created_by, start_date, end_date, created_at
+		FROM polls
+		WHERE id = ?
+	`
+	row := db.QueryRow(pollQuery, pollID)
+
+	var p Poll
+	if err := row.Scan(
+		&p.ID,
+		&p.Title,
+		&p.Description,
+		&p.CreatedBy,
+		&p.StartDate,
+		&p.EndDate,
+		&p.CreatedAt,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	qQuery := `
+		SELECT id, poll_id, question_text
+		FROM questions
+		WHERE poll_id = ?
+	`
+	qRows, err := db.Query(qQuery, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer qRows.Close()
+
+	var questions []Question
+	for qRows.Next() {
+		var q Question
+		if err := qRows.Scan(&q.ID, &q.PollID, &q.Text); err != nil {
+			return nil, err
+		}
+
+		cQuery := `
+			SELECT id, question_id, choice_text
+			FROM choices
+			WHERE question_id = ?
+		`
+		cRows, err := db.Query(cQuery, q.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		var choices []Choice
+		for cRows.Next() {
+			var c Choice
+			if err := cRows.Scan(&c.ID, &c.QuestionID, &c.Text); err != nil {
+				cRows.Close()
+				return nil, err
+			}
+			choices = append(choices, c)
+		}
+		cRows.Close()
+
+		q.Choices = choices
+		questions = append(questions, q)
+	}
+	p.Questions = questions
+
+	return &p, nil
 }
 
 // CreatePoll inserts a new poll into the database.
@@ -42,29 +113,6 @@ func CreatePoll(db *sql.DB, poll *Poll) error {
 	}
 	poll.ID = newID
 	return nil
-}
-
-// GetPoll retrieves a single poll by ID.
-func GetPoll(db *sql.DB, pollID int64) (*Poll, error) {
-	query := `
-        SELECT id, title, description, created_by, start_date, end_date, created_at
-        FROM polls
-        WHERE id = ?
-    `
-	row := db.QueryRow(query, pollID)
-
-	var p Poll
-	err := row.Scan(
-		&p.ID, &p.Title, &p.Description, &p.CreatedBy,
-		&p.StartDate, &p.EndDate, &p.CreatedAt,
-	)
-	if err == sql.ErrNoRows {
-		return nil, nil // no poll found, return nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	return &p, nil
 }
 
 // ListPolls retrieves all polls (for example).

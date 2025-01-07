@@ -1,0 +1,16 @@
+# Use the official MySQL 8.0 image (or whichever version you prefer)
+FROM mysql:8.0
+
+# The environment variables below are for initialization.
+# Adjust as necessary: user, password, and default database name.
+ENV MYSQL_ROOT_PASSWORD=my-secret-pw
+ENV MYSQL_DATABASE=simple_poll_db
+ENV MYSQL_USER=simplepolluser
+ENV MYSQL_PASSWORD=simplepollpass
+
+# Copy the initialization script to /docker-entrypoint-initdb.d/
+# MySQL will automatically run any .sql file in this directory on startup
+COPY fly.sql /docker-entrypoint-initdb.d/
+
+# Expose port 3306 if you plan to connect from outside Docker
+EXPOSE 3306
