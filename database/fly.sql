@@ -38,16 +38,25 @@ CREATE TABLE IF NOT EXISTS choices (
 -- 5. VOTES (or RESPONSES)
 CREATE TABLE IF NOT EXISTS votes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    token_id BIGINT NOT NULL,
     question_id BIGINT NOT NULL,
     choice_id BIGINT NOT NULL,
     voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+    FOREIGN KEY (token_id) REFERENCES voting_tokens(id) ON DELETE CASCADE,
     FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
     FOREIGN KEY (choice_id) REFERENCES choices(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_vote (user_id, question_id)
+
+    -- If you want to ensure a token can only vote once per question:
+    UNIQUE KEY unique_vote_per_token (token_id, question_id)
+);
+
+CREATE TABLE IF NOT EXISTS voting_tokens (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token_value VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Insert a test user with ID = 100
-INSERT INTO users (id, username, email, password_hash)
-VALUES (100, 'test_user', 'testuser@example.com', 'hash_for_test_user');
+-- INSERT INTO users (id, username, email, password_hash)
+-- VALUES (100, 'test_user', 'testuser@example.com', 'hash_for_test_user');

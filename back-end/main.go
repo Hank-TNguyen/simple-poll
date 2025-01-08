@@ -32,16 +32,44 @@ func main() {
 		log.Fatalf("Could not ping DB: %v", err)
 	}
 
-	// ROUTES
-	http.HandleFunc("/api/hello", func(w http.ResponseWriter, r *http.Request) {
+	// Use a ServeMux to handle all routes
+	mux := http.NewServeMux()
+
+	// Example route
+	mux.HandleFunc("/api/hello", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{"message": "Hello from Go backend!"}`)
 	})
 
 	// Attach poll routes at /api/polls
-	http.Handle("/api/polls/", http.StripPrefix("/api/polls", poll.PollRouter(db)))
-	http.Handle("/api/questions/", http.StripPrefix("/api/questions", poll.QuestionRouter(db)))
-	http.Handle("/api/choices/", http.StripPrefix("/api/choices", poll.ChoiceRouter(db)))
+	mux.Handle("/api/polls/", http.StripPrefix("/api/polls", poll.PollRouter(db)))
+	mux.Handle("/api/questions/", http.StripPrefix("/api/questions", poll.QuestionRouter(db)))
+	mux.Handle("/api/choices/", http.StripPrefix("/api/choices", poll.ChoiceRouter(db)))
+
+	// Wrap the mux with our CORS middleware
+	handlerWithCORS := corsMiddleware(mux)
 
 	log.Println("Backend running on port 3000")
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	log.Fatal(http.ListenAndServe(":3000", handlerWithCORS))
+}
+
+// corsMiddleware sets CORS headers on every request
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Allow requests from your React app’s URL/port
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3001")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		// Allowed methods and headers
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// If this is a preflight request, return 200 directly
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Otherwise, pass the request along
+		next.ServeHTTP(w, r)
+	})
 }
